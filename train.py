@@ -2,6 +2,7 @@
 # Adapted from: https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
 
 from __future__ import print_function, division
+import argparse
 
 import torch
 import torch.nn as nn
@@ -15,17 +16,20 @@ import time
 import os
 import copy
 
-device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+import utils
 
-def train_model(dataloaders, dataset_sizes, model, criterion, optimizer, scheduler, num_epochs=25):
-    global device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+epoch = 0
+
+def train_model(dataloaders, dataset_sizes, model, criterion, optimizer, scheduler, start_epoch, end_epoch):
+    global device, epoch
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
 
-    for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+    for epoch in range(start_epoch, end_epoch):
+        print('Epoch {}/{}'.format(epoch, end_epoch - 1))
         print('-' * 10)
 
         # Each epoch has a training and validation phase
@@ -86,7 +90,8 @@ def train_model(dataloaders, dataset_sizes, model, criterion, optimizer, schedul
     model.load_state_dict(best_model_wts)
     return model
 
-def main():
+def main(checkpoint=None):
+    global epoch
     # Data augmentation and normalization for training
     # Just normalization for validation
     data_transforms = {
@@ -122,18 +127,37 @@ def main():
     # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
     model_ft.fc = nn.Linear(num_ftrs, 2)
 
-    model_ft = model_ft.to(device)
+    if checkpoint is None:
+        model_ft = model_ft.to(device)
 
-    criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss()
 
-    # Observe that all parameters are being optimized
-    optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
+        # Observe that all parameters are being optimized
+        optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
 
-    # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+        # Decay LR by a factor of 0.1 every 7 epochs
+        exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    model_ft = train_model(dataloaders, dataset_sizes, model_ft, criterion,
-            optimizer_ft, exp_lr_scheduler, num_epochs=25)
+    else:
+        model_state_dict, criterion, optimizer_ft, exp_lr_scheduler, epoch = utils.load_model(checkpoint)
+        model_ft.load_state_dict(model_state_dict)
+        model_tf = model_ft.to(device)
+    try:
+        model_ft = train_model(dataloaders, dataset_sizes, model_ft, criterion,
+            optimizer_ft, exp_lr_scheduler, start_epoch=epoch, end_epoch=25)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        utils.save_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler,
+                epoch)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--checkpoint',
+        help='Specify a checkpoint file to load from')
+    args = parser.parse_args()
+
+    if args.checkpoint:
+        main(args.checkpoint)
+    else:
+        main()
