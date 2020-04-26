@@ -29,8 +29,6 @@ For more details checkout the [offcial docs](https://bentoml.readthedocs.io/) al
 4. saveToBento.py - The script that creates, packs and saves the Bento Service. The script packs the models weights, model definition and the information on how to serve along with the dependencies and saves it into the disk. Each saved Bento Service is stand alone and containes everything needed to serve it. The saved services are also versioned for tracking the different models that you tested.
 
 ## Usage
-
-## Usage
  
 First of all, download the dataset by running the script `sh get_data.sh`.
 
