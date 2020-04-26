@@ -17,6 +17,7 @@ import os
 import copy
 
 import utils
+from classificationService import AntOrBeeClassifier
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 epoch = 0
@@ -141,10 +142,21 @@ def main(checkpoint=None):
     else:
         model_state_dict, criterion, optimizer_ft, exp_lr_scheduler, epoch = utils.load_model(checkpoint)
         model_ft.load_state_dict(model_state_dict)
-        model_tf = model_ft.to(device)
+        model_ft = model_ft.to(device)
     try:
         model_ft = train_model(dataloaders, dataset_sizes, model_ft, criterion,
             optimizer_ft, exp_lr_scheduler, start_epoch=epoch, end_epoch=25)
+
+        saveToBento = input("Save model to Bento ML (yes/no): ")
+
+        if saveToBento.lower() == "yes":
+            # Add it to BentoML
+            bento_svc = AntOrBeeClassifier()
+            bento_svc.pack('model', model_ft)
+
+            # Save your Bento Service
+            saved_path = bento_svc.save()
+            print('Bento Service saved in ', saved_path)
     except KeyboardInterrupt:
         pass
     finally:

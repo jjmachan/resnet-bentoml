@@ -11,6 +11,10 @@ def save_model(model, criterion, optimizer, scheduler, num_epochs, checkpoint_pa
 
     checkpoint_file = os.path.join(checkpoint_path, 'model-%d-%s.ckpt'\
             %(num_epochs+1, datetime.now()))
+
+    # Convert to cpu before saving
+    cpu = torch.device('cpu')
+    model = model.to(cpu)
     torch.save({
         'model': model.state_dict(),
         'criterion': criterion,
