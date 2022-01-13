@@ -1,7 +1,7 @@
 BentoML==0.7.3
 imageio==2.8.0
 numpy==1.18.1
-Pillow==7.0.0
+Pillow==9.0.0
 torch==1.4.0
 torchvision==0.5.0
 qdm==4.45.0
